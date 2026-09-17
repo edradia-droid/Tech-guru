@@ -31,7 +31,7 @@ const U='https://vrjxejuyiynllygiozhs.supabase.co',K='sb_publishable__esNlSYCC7d
 function step(n){document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.dataset.step==n));if(n===5)loadWishes()}function show(){journey.classList.add('show');step(1);confetti()}function hide(){journey.classList.remove('show')}
 function confetti(){for(let i=0;i<45;i++){let c=document.createElement('i');c.style.cssText=`position:absolute;z-index:40;top:-15px;left:${45+Math.random()*10}%;width:7px;height:12px;background:${['#ffd76a','#ff7fa8','#9b7cff','#fff'][i%4]};--x:${Math.random()*500-250}px;animation:fall 1.8s ${Math.random()*.3}s linear forwards`;scene.appendChild(c);setTimeout(()=>c.remove(),2200)}}let st=document.createElement('style');st.textContent='@keyframes fall{to{transform:translate3d(var(--x),100vh,0) rotate(720deg);opacity:0}}';document.head.appendChild(st);
 function fireworks(){for(let i=0;i<4;i++){let f=document.createElement('i');f.className='firework burst';f.style.left=25+i*17+'%';f.style.top=25+(i%2)*18+'%';f.style.animationDelay=i*.22+'s';journey.appendChild(f);setTimeout(()=>f.remove(),2200)}}
-function melody(){if(playing)return;playing=true;document.getElementById('song').textContent='🎵 Birthday melody playing…';audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();[523.25,587.33,659.25,783.99,659.25,587.33,523.25,659.25,783.99,880,783.99,659.25].forEach((f,i)=>{let o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime+i*.38;o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.055,t+.03);g.gain.exponentialRampToValueAtTime(.001,t+.34);o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+.36)});setTimeout(()=>{playing=false;document.getElementById('song').textContent='🎵 Play a birthday melody'},5200)}
+function melody(){if(playing)return;playing=true;document.getElementById('song').textContent='🎵 Birthday melody playing…';audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();[523.25,587.33,659.25,783.99,659.25,587.33,523.25,659.25,783.99,880,783.99,659.25].forEach((f,i)=>{let o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime+i*.38;o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.055,t+.03);g.gain.exponentialRampToValueAtTime(.001,t+.34);o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+.36)});setTimeout(()=>{playing=false;document.getElementById('song').textContent='🎵 A BIRTHDAY SONG FOR YOU'},5200)}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function loadWishes(){wishList.innerHTML='<div class="wish-empty">Loading your birthday wishes…</div>';try{let r=await fetch(`${U}/rest/v1/birthday_wishes?select=name,message,image_path,created_at&status=eq.approved&order=created_at.desc`,{headers:{apikey:K,Authorization:`Bearer ${K}`}});if(!r.ok)throw 0;let a=await r.json();wishList.innerHTML=a.length?a.map(w=>`<article class="wish-item"><div class="wish-head"><div class="wish-name">💖 ${esc(w.name)}</div><div class="wish-date">${esc(new Date(w.created_at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}))}</div></div><div class="wish-message">${esc(w.message)}</div>${w.image_path?`<img class="wish-photo" src="${U}/storage/v1/object/public/birthday-wishes/${esc(w.image_path)}" alt="Photo shared by ${esc(w.name)}">`:''}</article>`).join(''):'<div class="wish-empty">No birthday wishes yet. They will appear here as people send them. 💖</div>'}catch(e){wishList.innerHTML='<div class="wish-error">We could not load the wishes right now. Please try again.</div>'}}
 document.getElementById('open').onclick=show;gift.onclick=show;gift.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show()}};document.getElementById('close').onclick=hide;document.getElementById('back').onclick=()=>step(1);document.getElementById('song').onclick=melody;document.getElementById('showWishes').onclick=()=>step(5);document.getElementById('refreshWishes').onclick=loadWishes;document.querySelectorAll('[data-next]').forEach(b=>b.onclick=()=>step(+b.dataset.next));document.getElementById('wish').onclick=()=>{document.getElementById('finalText').style.display='block';fireworks();confetti()};
@@ -84,7 +84,7 @@ document.getElementById('open').onclick=show;gift.onclick=show;gift.onkeydown=e=
     if (playing) {
       command('pauseVideo');
       playing = false;
-      song.textContent = '🎵 Play Birthday Suit — The Weeknd (0:40–1:30)';
+      song.textContent = '🎵 A BIRTHDAY SONG FOR YOU';
       if (timer) clearInterval(timer);
       return;
     }
@@ -108,7 +108,7 @@ document.getElementById('open').onclick=show;gift.onclick=show;gift.onkeydown=e=
         command('pauseVideo');
         command('seekTo', [40, true]);
         playing = false;
-        song.textContent = '🎵 Play Birthday Suit — The Weeknd (0:40–1:30)';
+        song.textContent = '🎵 A BIRTHDAY SONG FOR YOU';
         if (timer) clearInterval(timer);
       }
     } catch (_) {}
@@ -161,6 +161,110 @@ document.getElementById('open').onclick=show;gift.onclick=show;gift.onkeydown=e=
         command('pauseVideo');
         command('seekTo', [40, true]);
         resetModernSong();
+      }
+    } catch (_) {}
+  });
+
+  let audioCtx = null;
+  let classicPlaying = false;
+  let classicTimer = null;
+  const melody = [
+    ['G4',.28],['G4',.28],['A4',.55],['G4',.55],['C5',.55],['B4',1.0],
+    ['G4',.28],['G4',.28],['A4',.55],['G4',.55],['D5',.55],['C5',1.0],
+    ['G4',.28],['G4',.28],['G5',.55],['E5',.55],['C5',.55],['B4',.55],['A4',1.0],
+    ['F5',.28],['F5',.28],['E5',.55],['C5',.55],['D5',.55],['C5',1.0]
+  ];
+  function noteFrequency(note) {
+    const m = note.match(/^([A-G])([0-9])$/);
+    if (!m) return 440;
+    const semitone = {C:-9,D:-7,E:-5,F:-4,G:-2,A:0,B:2}[m[1]] + (Number(m[2])-4)*12;
+    return 440 * Math.pow(2, semitone/12);
+  }
+  function stopClassic() {
+    classicPlaying = false;
+    classic.textContent = '🎂 HAPPY BIRTHDAY TO YOU';
+    if (classicTimer) clearTimeout(classicTimer);
+  }
+  function playClassic() {
+    if (classicPlaying) {
+      stopClassic();
+      if (audioCtx) audioCtx.suspend();
+      return;
+    }
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume();
+    classicPlaying = true;
+    classic.textContent = '⏸ PAUSE HAPPY BIRTHDAY';
+    let i = 0;
+    const playNext = () => {
+      if (!classicPlaying || i >= melody.length) {
+        stopClassic();
+        return;
+      }
+      const [note, duration] = melody[i++];
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = noteFrequency(note);
+      gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.28, audioCtx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + Math.max(0.04, duration - 0.03));
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+      classicTimer = setTimeout(playNext, duration * 1000);
+    };
+    playNext();
+  }
+  classic.addEventListener('click', playClassic);
+})();
+</script>
+<script>
+(() => {
+  const song = document.getElementById('song');
+  const classic = document.getElementById('classicSong');
+  if (!song || !classic) return;
+
+  const frame = document.createElement('iframe');
+  frame.id = 'birthdaySongPlayer';
+  frame.title = 'Birthday song';
+  frame.allow = 'autoplay; encrypted-media; picture-in-picture';
+  frame.setAttribute('aria-hidden', 'true');
+  frame.style.cssText = 'position:fixed;width:1px;height:1px;left:-10px;top:-10px;opacity:0;pointer-events:none;border:0;';
+  frame.src = 'https://www.youtube.com/embed/h-Y-hKRXxAQ?enablejsapi=1&start=40&end=90&playsinline=1&origin=' + encodeURIComponent(location.origin);
+  document.body.appendChild(frame);
+
+  let playing = false;
+  let timer = null;
+  function command(func, args = []) {
+    frame.contentWindow.postMessage(JSON.stringify({event:'command',func,args}), '*');
+  }
+  function resetFirstSong() {
+    playing = false;
+    song.textContent = '🎵 A BIRTHDAY SONG FOR YOU';
+    if (timer) clearInterval(timer);
+  }
+  song.addEventListener('click', () => {
+    if (playing) {
+      command('pauseVideo');
+      resetFirstSong();
+      return;
+    }
+    command('seekTo', [40, true]);
+    command('playVideo');
+    playing = true;
+    song.textContent = '⏸ PAUSE A BIRTHDAY SONG FOR YOU';
+    if (timer) clearInterval(timer);
+    timer = setInterval(() => command('getCurrentTime'), 500);
+  });
+  window.addEventListener('message', e => {
+    if (e.source !== frame.contentWindow) return;
+    try {
+      const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+      if (data.event === 'infoDelivery' && data.info && typeof data.info.currentTime === 'number' && data.info.currentTime >= 90) {
+        command('pauseVideo');
+        command('seekTo', [40, true]);
+        resetFirstSong();
       }
     } catch (_) {}
   });
