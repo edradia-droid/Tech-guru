@@ -1,0 +1,35 @@
+name: Keep Aminah photo fully visible
+
+on:
+  push:
+    paths:
+      - '.github/workflows/keep-aminah-photo-visible.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix-photo-display:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Make the complete photo visible on every screen
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('object-fit:cover;object-position:center 42%;filter:saturate(1.04) contrast(1.02);pointer-events:none}', 'object-fit:contain;object-position:center center;filter:saturate(1.04) contrast(1.02);pointer-events:none;background:#080613}')
+          s = s.replace('@media(max-width:390px){.hero-photo{width:112vw}', '@media(max-width:390px){.hero-photo{object-fit:contain}')
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Commit the display fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Show Aminah photo fully on desktop and mobile' || exit 0
+          git push
