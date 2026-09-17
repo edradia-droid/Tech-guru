@@ -1,0 +1,37 @@
+name: Use Aminah birthday photo
+
+on:
+  push:
+    paths:
+      - '.github/workflows/use-aminah-photo.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-photo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use the exact supplied Aminah photo
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          old = 'assets/ammyace-cake.webp'
+          new = 'https://i.postimg.cc/Dyq6tM92/Whats-App-Image-2026-09-17-at-5-56-13-PM.jpg'
+          if old not in s:
+              raise SystemExit('Expected hero image path was not found')
+          p.write_text(s.replace(old, new), encoding='utf-8')
+          PY
+
+      - name: Commit the photo change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Use Aminah supplied birthday photo as hero background'
+          git push
