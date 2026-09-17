@@ -18,7 +18,7 @@ button{font:inherit}.open,.next,.music{border:0;border-radius:999px;padding:14px
 <div class="stars"><i class="star" style="left:8%;top:13%"></i><i class="star" style="left:18%;top:38%"></i><i class="star" style="left:31%;top:9%"></i><i class="star" style="left:72%;top:12%"></i><i class="star" style="left:87%;top:28%"></i><i class="star" style="left:92%;top:61%"></i><i class="star" style="left:12%;top:76%"></i></div>
 <div class="photo-glow"></div><img class="hero-photo" src="https://i.postimg.cc/Dyq6tM92/Whats-App-Image-2026-09-17-at-5-56-13-PM.jpg" alt="Aminah holding her birthday cake">
 <section class="content hero"><div class="eyebrow">A little universe made for you</div><div class="name">For my beautiful sister, Aminah</div><div style="margin:10px 0 4px;padding:7px 13px;border:1px solid #ffffff35;border-radius:999px;background:#120c20a8;color:#f5c400;font-size:11px;letter-spacing:.12em;text-transform:uppercase;backdrop-filter:blur(8px)">✨ The birthday girl ✨</div><h1>Happy Birthday<br><span>Ammyace</span> ✨</h1><p class="subtitle">Today isn't just another day. It's a celebration of the beautiful person, sister and blessing that you are.</p>
-<div class="stage"><div class="gift" id="gift" tabindex="0" role="button" aria-label="Open Aminah's birthday gift"><div class="cube"><i class="face front"></i><i class="face back"></i><i class="face right"></i><i class="face left"></i><i class="face top"></i><div class="ribbon-v"></div><div class="ribbon-h"></div></div><div class="lid"></div><div class="bow"></div></div></div><div class="hint">Tap the gift or the button</div><button class="open" id="open">OPEN AMMYACE'S SURPRISE 🎁</button><button class="music" id="song">🎵 Play a birthday melody</button><div class="footer-note">A tiny birthday universe, made with love.</div></section>
+<div class="stage"><div class="gift" id="gift" tabindex="0" role="button" aria-label="Open Aminah's birthday gift"><div class="cube"><i class="face front"></i><i class="face back"></i><i class="face right"></i><i class="face left"></i><i class="face top"></i><div class="ribbon-v"></div><div class="ribbon-h"></div></div><div class="lid"></div><div class="bow"></div></div></div><div class="hint">Tap the gift or the button</div><button class="open" id="open">OPEN AMMYACE'S SURPRISE 🎁</button><button class="music" id="song">🎵 Play Birthday Suit — The Weeknd (0:40–1:30)</button><div class="footer-note">A tiny birthday universe, made with love.</div></section>
 <section class="journey" id="journey"><div class="card">
 <div class="section active" data-step="1"><div class="heart">💖</div><div class="eyebrow">Chapter one</div><h2>Happy Birthday,<br><span class="gold">Aminah</span></h2><p>My dear sister, my wonderful <strong>Ammyace</strong> — today I celebrate you with all my heart. May your new year be softer where life has been hard, brighter where things have felt uncertain, and filled with moments that remind you how deeply loved you are.</p><div class="joke">And yes… today you are officially <span class="gold">Aminatu papa!</span> 😂💛</div><button class="next" data-next="2">There is more for you →</button></div>
 <div class="section" data-step="2"><div class="heart">🌷</div><div class="eyebrow">A prayer for you</div><h2>May Allah bless your new chapter.</h2><div class="prayer"><p>May Allah bless you with a long life filled with goodness, protect you wherever you go, and grant you peace in your heart. May He open doors of halal opportunities, surround you with sincere people, increase you in wisdom and strength, and make your dreams become beautiful realities.</p><p>May every silent prayer you have made find its way to an answer. May your health, happiness and faith continue to grow. May Allah guide your steps, protect your future, forgive your shortcomings, and place barakah in everything that concerns you.</p><p><strong>Ameen ya Rabb. 🤲🏽✨</strong></p></div><button class="next" data-next="3">One last message →</button></div>
@@ -35,4 +35,84 @@ function melody(){if(playing)return;playing=true;document.getElementById('song')
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function loadWishes(){wishList.innerHTML='<div class="wish-empty">Loading your birthday wishes…</div>';try{let r=await fetch(`${U}/rest/v1/birthday_wishes?select=name,message,image_path,created_at&status=eq.approved&order=created_at.desc`,{headers:{apikey:K,Authorization:`Bearer ${K}`}});if(!r.ok)throw 0;let a=await r.json();wishList.innerHTML=a.length?a.map(w=>`<article class="wish-item"><div class="wish-head"><div class="wish-name">💖 ${esc(w.name)}</div><div class="wish-date">${esc(new Date(w.created_at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}))}</div></div><div class="wish-message">${esc(w.message)}</div>${w.image_path?`<img class="wish-photo" src="${U}/storage/v1/object/public/birthday-wishes/${esc(w.image_path)}" alt="Photo shared by ${esc(w.name)}">`:''}</article>`).join(''):'<div class="wish-empty">No birthday wishes yet. They will appear here as people send them. 💖</div>'}catch(e){wishList.innerHTML='<div class="wish-error">We could not load the wishes right now. Please try again.</div>'}}
 document.getElementById('open').onclick=show;gift.onclick=show;gift.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show()}};document.getElementById('close').onclick=hide;document.getElementById('back').onclick=()=>step(1);document.getElementById('song').onclick=melody;document.getElementById('showWishes').onclick=()=>step(5);document.getElementById('refreshWishes').onclick=loadWishes;document.querySelectorAll('[data-next]').forEach(b=>b.onclick=()=>step(+b.dataset.next));document.getElementById('wish').onclick=()=>{document.getElementById('finalText').style.display='block';fireworks();confetti()};
-</script></body></html>
+</script><script>
+(() => {
+  const oldSong = document.getElementById('song');
+  if (!oldSong) return;
+
+  const song = oldSong.cloneNode(true);
+  oldSong.replaceWith(song);
+
+  const frame = document.createElement('iframe');
+  frame.id = 'birthdaySongPlayer';
+  frame.title = 'Birthday Suit by The Weeknd';
+  frame.allow = 'autoplay; encrypted-media; picture-in-picture';
+  frame.setAttribute('aria-hidden', 'true');
+  frame.style.cssText = 'position:fixed;width:1px;height:1px;left:-10px;top:-10px;opacity:0;pointer-events:none;border:0;';
+  frame.src = 'https://www.youtube.com/embed/h-Y-hKRXxAQ?enablejsapi=1&start=40&end=90&playsinline=1&origin=' + encodeURIComponent(location.origin);
+  document.body.appendChild(frame);
+
+  let ready = false;
+  let playing = false;
+  let timer = null;
+
+  function command(func, args = []) {
+    frame.contentWindow.postMessage(JSON.stringify({
+      event: 'command',
+      func,
+      args
+    }), '*');
+  }
+
+  window.addEventListener('message', e => {
+    if (e.source !== frame.contentWindow) return;
+    try {
+      const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+      if (data.event === 'onReady') ready = true;
+    } catch (_) {}
+  });
+
+  frame.addEventListener('load', () => {
+    ready = true;
+  });
+
+  song.addEventListener('click', () => {
+    if (!ready) {
+      frame.contentWindow.postMessage(JSON.stringify({event:'listening',id:1}), '*');
+    }
+
+    if (playing) {
+      command('pauseVideo');
+      playing = false;
+      song.textContent = '🎵 Play Birthday Suit — The Weeknd (0:40–1:30)';
+      if (timer) clearInterval(timer);
+      return;
+    }
+
+    command('seekTo', [40, true]);
+    command('playVideo');
+    playing = true;
+    song.textContent = '⏸ Pause Birthday Suit';
+
+    if (timer) clearInterval(timer);
+    timer = setInterval(() => {
+      command('getCurrentTime');
+    }, 500);
+  });
+
+  window.addEventListener('message', e => {
+    if (e.source !== frame.contentWindow) return;
+    try {
+      const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+      if (data.event === 'infoDelivery' && data.info && typeof data.info.currentTime === 'number' && data.info.currentTime >= 90) {
+        command('pauseVideo');
+        command('seekTo', [40, true]);
+        playing = false;
+        song.textContent = '🎵 Play Birthday Suit — The Weeknd (0:40–1:30)';
+        if (timer) clearInterval(timer);
+      }
+    } catch (_) {}
+  });
+})();
+</script>
+</body></html>
