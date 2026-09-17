@@ -1,0 +1,48 @@
+name: Switch birthday page paragraph text to deep blue
+
+on:
+  push:
+    paths:
+      - '.github/workflows/deep-blue-paragraphs.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-text-color:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Change paragraph text to deep blue
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          replacements = {
+              '.subtitle{max-width:450px;color:#f5c400': '.subtitle{max-width:450px;color:#0b3d91',
+              '.hint{font-size:12px;color:#f5c400': '.hint{font-size:12px;color:#0b3d91',
+              '.footer-note{font-size:11px;color:#f5c400': '.footer-note{font-size:11px;color:#0b3d91',
+              '.card p{color:#f5c400': '.card p{color:#0b3d91',
+              '.wish-message{color:#f5c400': '.wish-message{color:#0b3d91',
+              '.wish-empty{color:#f5c400': '.wish-empty{color:#0b3d91',
+          }
+          changed = False
+          for old, new in replacements.items():
+              if old in s:
+                  s = s.replace(old, new)
+                  changed = True
+          if not changed:
+              raise SystemExit('No expected paragraph color rules were found')
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Commit the change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Use deep blue for birthday page paragraphs'
+          git push
