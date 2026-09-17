@@ -20,11 +20,8 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-
-          # Remove every remaining reference to the previous visible title.
           replacements = {
               '🎵 Play Birthday Suit — The Weeknd (0:40–1:30)': '🎵 A BIRTHDAY SONG FOR YOU',
               '🎵 Play a birthday melody': '🎵 A BIRTHDAY SONG FOR YOU',
@@ -34,31 +31,16 @@ jobs:
           }
           for old, new in replacements.items():
               s = s.replace(old, new)
-
-          # Ensure the two buttons have the exact requested labels.
           import re
-          s = re.sub(
-              r'<button class="music" id="song">.*?</button>',
-              '<button class="music" id="song">🎵 A BIRTHDAY SONG FOR YOU</button>',
-              s,
-              count=1,
-              flags=re.S
-          )
+          s = re.sub(r'<button class="music" id="song">.*?</button>', '<button class="music" id="song">🎵 A BIRTHDAY SONG FOR YOU</button>', s, count=1, flags=re.S)
           if 'id="classicSong"' not in s:
-              s = s.replace(
-                  '<button class="music" id="song">🎵 A BIRTHDAY SONG FOR YOU</button>',
-                  '<button class="music" id="song">🎵 A BIRTHDAY SONG FOR YOU</button><button class="music" id="classicSong">🎂 HAPPY BIRTHDAY TO YOU</button>',
-                  1
-              )
+              s = s.replace('<button class="music" id="song">🎵 A BIRTHDAY SONG FOR YOU</button>', '<button class="music" id="song">🎵 A BIRTHDAY SONG FOR YOU</button><button class="music" id="classicSong">🎂 HAPPY BIRTHDAY TO YOU</button>', 1)
 
-          # The player script is installed separately and always resets the first
-          # button to the new title, never the old one.
           script = r'''<script>
           (() => {
             const song = document.getElementById('song');
             const classic = document.getElementById('classicSong');
             if (!song || !classic) return;
-
             const frame = document.createElement('iframe');
             frame.id = 'birthdaySongPlayer';
             frame.title = 'Birthday song';
@@ -67,45 +49,26 @@ jobs:
             frame.style.cssText = 'position:fixed;width:1px;height:1px;left:-10px;top:-10px;opacity:0;pointer-events:none;border:0;';
             frame.src = 'https://www.youtube.com/embed/h-Y-hKRXxAQ?enablejsapi=1&start=40&end=90&playsinline=1&origin=' + encodeURIComponent(location.origin);
             document.body.appendChild(frame);
-
-            let playing = false;
-            let timer = null;
-            function command(func, args = []) {
-              frame.contentWindow.postMessage(JSON.stringify({event:'command',func,args}), '*');
-            }
-            function resetFirstSong() {
-              playing = false;
-              song.textContent = '🎵 A BIRTHDAY SONG FOR YOU';
-              if (timer) clearInterval(timer);
-            }
+            let playing = false, timer = null;
+            function command(func, args = []) { frame.contentWindow.postMessage(JSON.stringify({event:'command',func,args}), '*'); }
+            function resetFirstSong() { playing = false; song.textContent = '🎵 A BIRTHDAY SONG FOR YOU'; if (timer) clearInterval(timer); }
             song.addEventListener('click', () => {
-              if (playing) {
-                command('pauseVideo');
-                resetFirstSong();
-                return;
-              }
-              command('seekTo', [40, true]);
-              command('playVideo');
-              playing = true;
+              if (playing) { command('pauseVideo'); resetFirstSong(); return; }
+              command('seekTo', [40, true]); command('playVideo'); playing = true;
               song.textContent = '⏸ PAUSE A BIRTHDAY SONG FOR YOU';
-              if (timer) clearInterval(timer);
-              timer = setInterval(() => command('getCurrentTime'), 500);
+              if (timer) clearInterval(timer); timer = setInterval(() => command('getCurrentTime'), 500);
             });
             window.addEventListener('message', e => {
               if (e.source !== frame.contentWindow) return;
               try {
                 const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
                 if (data.event === 'infoDelivery' && data.info && typeof data.info.currentTime === 'number' && data.info.currentTime >= 90) {
-                  command('pauseVideo');
-                  command('seekTo', [40, true]);
-                  resetFirstSong();
+                  command('pauseVideo'); command('seekTo', [40, true]); resetFirstSong();
                 }
               } catch (_) {}
             });
 
-            let audioCtx = null;
-            let classicPlaying = false;
-            let classicTimer = null;
+            let audioCtx = null, classicPlaying = false, classicTimer = null;
             const melody = [
               ['G4',.28],['G4',.28],['A4',.55],['G4',.55],['C5',.55],['B4',1.0],
               ['G4',.28],['G4',.28],['A4',.55],['G4',.55],['D5',.55],['C5',1.0],
@@ -113,62 +76,43 @@ jobs:
               ['F5',.28],['F5',.28],['E5',.55],['C5',.55],['D5',.55],['C5',1.0]
             ];
             function noteFrequency(note) {
-              const m = note.match(/^([A-G])([0-9])$/);
-              if (!m) return 440;
+              const m = note.match(/^([A-G])([0-9])$/); if (!m) return 440;
               const semitone = {C:-9,D:-7,E:-5,F:-4,G:-2,A:0,B:2}[m[1]] + (Number(m[2])-4)*12;
               return 440 * Math.pow(2, semitone/12);
             }
-            function stopClassic() {
-              classicPlaying = false;
-              classic.textContent = '🎂 HAPPY BIRTHDAY TO YOU';
-              if (classicTimer) clearTimeout(classicTimer);
-            }
+            function stopClassic() { classicPlaying = false; classic.textContent = '🎂 HAPPY BIRTHDAY TO YOU'; if (classicTimer) clearTimeout(classicTimer); }
             function playClassic() {
-              if (classicPlaying) {
-                stopClassic();
-                if (audioCtx) audioCtx.suspend();
-                return;
-              }
-              audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-              audioCtx.resume();
-              classicPlaying = true;
-              classic.textContent = '⏸ PAUSE HAPPY BIRTHDAY';
+              if (classicPlaying) { stopClassic(); if (audioCtx) audioCtx.suspend(); return; }
+              try {
+                audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+                const resumeResult = audioCtx.resume();
+                if (resumeResult && typeof resumeResult.catch === 'function') resumeResult.catch(() => {});
+              } catch (_) { return; }
+              classicPlaying = true; classic.textContent = '⏸ PAUSE HAPPY BIRTHDAY';
               let i = 0;
               const playNext = () => {
-                if (!classicPlaying || i >= melody.length) {
-                  stopClassic();
-                  return;
-                }
+                if (!classicPlaying || i >= melody.length) { stopClassic(); return; }
                 const [note, duration] = melody[i++];
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.value = noteFrequency(note);
+                const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                osc.type = 'sine'; osc.frequency.value = noteFrequency(note);
                 gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.28, audioCtx.currentTime + 0.02);
                 gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + Math.max(0.04, duration - 0.03));
-                osc.connect(gain).connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + duration);
+                osc.connect(gain).connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + duration);
                 classicTimer = setTimeout(playNext, duration * 1000);
               };
               playNext();
             }
             classic.addEventListener('click', playClassic);
+            window.addEventListener('load', () => setTimeout(() => playClassic(), 350));
           })();
           </script>'''
 
-          # Replace the previously injected player script if present. This avoids
-          # duplicate click handlers that could restore an obsolete title.
           marker_start = '<script>\n          (() => {\n            const song = document.getElementById(\'song\');'
-          while marker_start in s:
-              start = s.index(marker_start)
-              end = s.index('</script>', start) + len('</script>')
-              s = s[:start] + script + s[end:]
-              break
-          if marker_start not in s:
+          if marker_start in s:
+              start = s.index(marker_start); end = s.index('</script>', start) + len('</script>'); s = s[:start] + script + s[end:]
+          else:
               s = s.replace('</body>', script + '\n</body>', 1)
-
           p.write_text(s, encoding='utf-8')
           PY
 
@@ -177,9 +121,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          if git diff --cached --quiet; then
-            echo "No changes needed"
-            exit 0
-          fi
-          git commit -m "Keep birthday song title after pause"
+          if git diff --cached --quiet; then echo "No changes needed"; exit 0; fi
+          git commit -m "Autoplay happy birthday song on page load"
           git push
