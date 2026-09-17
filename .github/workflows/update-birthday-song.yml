@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Update birthday song controls
+      - name: Fix birthday song controls
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -24,17 +24,35 @@ jobs:
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
 
-          old_labels = [
-              '<button class="music" id="song">🎵 Play Birthday Suit — The Weeknd (0:40–1:30)</button>',
-              '<button class="music" id="song">🎵 Play a birthday melody</button>'
-          ]
-          new_first = '<button class="music" id="song">🎵 A BIRTHDAY SONG FOR YOU</button><button class="music" id="classicSong">🎂 HAPPY BIRTHDAY TO YOU</button>'
-          for old in old_labels:
-              if old in s:
-                  s = s.replace(old, new_first, 1)
-                  break
+          # Remove every remaining reference to the previous visible title.
+          replacements = {
+              '🎵 Play Birthday Suit — The Weeknd (0:40–1:30)': '🎵 A BIRTHDAY SONG FOR YOU',
+              '🎵 Play a birthday melody': '🎵 A BIRTHDAY SONG FOR YOU',
+              "song.textContent = '🎵 Play Birthday Suit — The Weeknd (0:40–1:30)'": "song.textContent = '🎵 A BIRTHDAY SONG FOR YOU'",
+              "song.textContent = '🎵 Play a birthday melody'": "song.textContent = '🎵 A BIRTHDAY SONG FOR YOU'",
+              '🎵 Play Birthday Suit — The Weeknd': '🎵 A BIRTHDAY SONG FOR YOU'
+          }
+          for old, new in replacements.items():
+              s = s.replace(old, new)
 
-          marker = '</body>'
+          # Ensure the two buttons have the exact requested labels.
+          import re
+          s = re.sub(
+              r'<button class="music" id="song">.*?</button>',
+              '<button class="music" id="song">🎵 A BIRTHDAY SONG FOR YOU</button>',
+              s,
+              count=1,
+              flags=re.S
+          )
+          if 'id="classicSong"' not in s:
+              s = s.replace(
+                  '<button class="music" id="song">🎵 A BIRTHDAY SONG FOR YOU</button>',
+                  '<button class="music" id="song">🎵 A BIRTHDAY SONG FOR YOU</button><button class="music" id="classicSong">🎂 HAPPY BIRTHDAY TO YOU</button>',
+                  1
+              )
+
+          # The player script is installed separately and always resets the first
+          # button to the new title, never the old one.
           script = r'''<script>
           (() => {
             const song = document.getElementById('song');
@@ -43,7 +61,7 @@ jobs:
 
             const frame = document.createElement('iframe');
             frame.id = 'birthdaySongPlayer';
-            frame.title = 'Birthday Suit by The Weeknd';
+            frame.title = 'Birthday song';
             frame.allow = 'autoplay; encrypted-media; picture-in-picture';
             frame.setAttribute('aria-hidden', 'true');
             frame.style.cssText = 'position:fixed;width:1px;height:1px;left:-10px;top:-10px;opacity:0;pointer-events:none;border:0;';
@@ -55,7 +73,7 @@ jobs:
             function command(func, args = []) {
               frame.contentWindow.postMessage(JSON.stringify({event:'command',func,args}), '*');
             }
-            function resetModernSong() {
+            function resetFirstSong() {
               playing = false;
               song.textContent = '🎵 A BIRTHDAY SONG FOR YOU';
               if (timer) clearInterval(timer);
@@ -63,13 +81,13 @@ jobs:
             song.addEventListener('click', () => {
               if (playing) {
                 command('pauseVideo');
-                resetModernSong();
+                resetFirstSong();
                 return;
               }
               command('seekTo', [40, true]);
               command('playVideo');
               playing = true;
-              song.textContent = '⏸ Pause A BIRTHDAY SONG FOR YOU';
+              song.textContent = '⏸ PAUSE A BIRTHDAY SONG FOR YOU';
               if (timer) clearInterval(timer);
               timer = setInterval(() => command('getCurrentTime'), 500);
             });
@@ -80,7 +98,7 @@ jobs:
                 if (data.event === 'infoDelivery' && data.info && typeof data.info.currentTime === 'number' && data.info.currentTime >= 90) {
                   command('pauseVideo');
                   command('seekTo', [40, true]);
-                  resetModernSong();
+                  resetFirstSong();
                 }
               } catch (_) {}
             });
@@ -140,16 +158,16 @@ jobs:
           })();
           </script>'''
 
-          # Always install/replace the generated player script. The button itself
-          # contains id="classicSong", so checking for that id cannot be used as
-          # a test for whether the script is already present.
-          start_marker = '<script>\n          (() => {\n            const song = document.getElementById(\'song\');'
-          if start_marker in s:
-              start = s.index(start_marker)
+          # Replace the previously injected player script if present. This avoids
+          # duplicate click handlers that could restore an obsolete title.
+          marker_start = '<script>\n          (() => {\n            const song = document.getElementById(\'song\');'
+          while marker_start in s:
+              start = s.index(marker_start)
               end = s.index('</script>', start) + len('</script>')
               s = s[:start] + script + s[end:]
-          else:
-              s = s.replace(marker, script + '\n' + marker, 1)
+              break
+          if marker_start not in s:
+              s = s.replace('</body>', script + '\n</body>', 1)
 
           p.write_text(s, encoding='utf-8')
           PY
@@ -163,5 +181,5 @@ jobs:
             echo "No changes needed"
             exit 0
           fi
-          git commit -m "Fix second birthday song initialization"
+          git commit -m "Keep birthday song title after pause"
           git push
