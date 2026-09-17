@@ -1,0 +1,132 @@
+name: Set Aminah Birthday Song
+
+on:
+  push:
+    paths:
+      - '.github/workflows/update-birthday-song.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-song:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Replace birthday melody with Birthday Suit
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          old = '<button class="music" id="song">🎵 Play a birthday melody</button>'
+          new = '<button class="music" id="song">🎵 Play Birthday Suit — The Weeknd (0:40–1:30)</button>'
+          if old in s:
+              s = s.replace(old, new, 1)
+          else:
+              s = s.replace('id="song">🎵 Play a birthday melody', 'id="song">🎵 Play Birthday Suit — The Weeknd (0:40–1:30)', 1)
+
+          marker = '</body>'
+          script = r'''<script>
+          (() => {
+            const oldSong = document.getElementById('song');
+            if (!oldSong) return;
+
+            const song = oldSong.cloneNode(true);
+            oldSong.replaceWith(song);
+
+            const frame = document.createElement('iframe');
+            frame.id = 'birthdaySongPlayer';
+            frame.title = 'Birthday Suit by The Weeknd';
+            frame.allow = 'autoplay; encrypted-media; picture-in-picture';
+            frame.setAttribute('aria-hidden', 'true');
+            frame.style.cssText = 'position:fixed;width:1px;height:1px;left:-10px;top:-10px;opacity:0;pointer-events:none;border:0;';
+            frame.src = 'https://www.youtube.com/embed/h-Y-hKRXxAQ?enablejsapi=1&start=40&end=90&playsinline=1&origin=' + encodeURIComponent(location.origin);
+            document.body.appendChild(frame);
+
+            let ready = false;
+            let playing = false;
+            let timer = null;
+
+            function command(func, args = []) {
+              frame.contentWindow.postMessage(JSON.stringify({
+                event: 'command',
+                func,
+                args
+              }), '*');
+            }
+
+            window.addEventListener('message', e => {
+              if (e.source !== frame.contentWindow) return;
+              try {
+                const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+                if (data.event === 'onReady') ready = true;
+              } catch (_) {}
+            });
+
+            frame.addEventListener('load', () => {
+              ready = true;
+            });
+
+            song.addEventListener('click', () => {
+              if (!ready) {
+                frame.contentWindow.postMessage(JSON.stringify({event:'listening',id:1}), '*');
+              }
+
+              if (playing) {
+                command('pauseVideo');
+                playing = false;
+                song.textContent = '🎵 Play Birthday Suit — The Weeknd (0:40–1:30)';
+                if (timer) clearInterval(timer);
+                return;
+              }
+
+              command('seekTo', [40, true]);
+              command('playVideo');
+              playing = true;
+              song.textContent = '⏸ Pause Birthday Suit';
+
+              if (timer) clearInterval(timer);
+              timer = setInterval(() => {
+                command('getCurrentTime');
+              }, 500);
+            });
+
+            window.addEventListener('message', e => {
+              if (e.source !== frame.contentWindow) return;
+              try {
+                const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+                if (data.event === 'infoDelivery' && data.info && typeof data.info.currentTime === 'number' && data.info.currentTime >= 90) {
+                  command('pauseVideo');
+                  command('seekTo', [40, true]);
+                  playing = false;
+                  song.textContent = '🎵 Play Birthday Suit — The Weeknd (0:40–1:30)';
+                  if (timer) clearInterval(timer);
+                }
+              } catch (_) {}
+            });
+          })();
+          </script>'''
+
+          if 'id="birthdaySongPlayer"' not in s:
+              s = s.replace(marker, script + '\n' + marker, 1)
+
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git commit -m "Replace birthday melody with Birthday Suit"
+          git push
