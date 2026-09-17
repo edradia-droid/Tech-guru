@@ -115,4 +115,108 @@ document.getElementById('open').onclick=show;gift.onclick=show;gift.onkeydown=e=
   });
 })();
 </script>
+<script>
+(() => {
+  const song = document.getElementById('song');
+  const classic = document.getElementById('classicSong');
+  if (!song || !classic) return;
+
+  const frame = document.createElement('iframe');
+  frame.id = 'birthdaySongPlayer';
+  frame.title = 'Birthday Suit by The Weeknd';
+  frame.allow = 'autoplay; encrypted-media; picture-in-picture';
+  frame.setAttribute('aria-hidden', 'true');
+  frame.style.cssText = 'position:fixed;width:1px;height:1px;left:-10px;top:-10px;opacity:0;pointer-events:none;border:0;';
+  frame.src = 'https://www.youtube.com/embed/h-Y-hKRXxAQ?enablejsapi=1&start=40&end=90&playsinline=1&origin=' + encodeURIComponent(location.origin);
+  document.body.appendChild(frame);
+
+  let playing = false;
+  let timer = null;
+  function command(func, args = []) {
+    frame.contentWindow.postMessage(JSON.stringify({event:'command',func,args}), '*');
+  }
+  function resetModernSong() {
+    playing = false;
+    song.textContent = '🎵 A BIRTHDAY SONG FOR YOU';
+    if (timer) clearInterval(timer);
+  }
+  song.addEventListener('click', () => {
+    if (playing) {
+      command('pauseVideo');
+      resetModernSong();
+      return;
+    }
+    command('seekTo', [40, true]);
+    command('playVideo');
+    playing = true;
+    song.textContent = '⏸ Pause A BIRTHDAY SONG FOR YOU';
+    if (timer) clearInterval(timer);
+    timer = setInterval(() => command('getCurrentTime'), 500);
+  });
+  window.addEventListener('message', e => {
+    if (e.source !== frame.contentWindow) return;
+    try {
+      const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+      if (data.event === 'infoDelivery' && data.info && typeof data.info.currentTime === 'number' && data.info.currentTime >= 90) {
+        command('pauseVideo');
+        command('seekTo', [40, true]);
+        resetModernSong();
+      }
+    } catch (_) {}
+  });
+
+  let audioCtx = null;
+  let classicPlaying = false;
+  let classicTimer = null;
+  const melody = [
+    ['G4',.28],['G4',.28],['A4',.55],['G4',.55],['C5',.55],['B4',1.0],
+    ['G4',.28],['G4',.28],['A4',.55],['G4',.55],['D5',.55],['C5',1.0],
+    ['G4',.28],['G4',.28],['G5',.55],['E5',.55],['C5',.55],['B4',.55],['A4',1.0],
+    ['F5',.28],['F5',.28],['E5',.55],['C5',.55],['D5',.55],['C5',1.0]
+  ];
+  function noteFrequency(note) {
+    const m = note.match(/^([A-G])([0-9])$/);
+    if (!m) return 440;
+    const semitone = {C:-9,D:-7,E:-5,F:-4,G:-2,A:0,B:2}[m[1]] + (Number(m[2])-4)*12;
+    return 440 * Math.pow(2, semitone/12);
+  }
+  function stopClassic() {
+    classicPlaying = false;
+    classic.textContent = '🎂 HAPPY BIRTHDAY TO YOU';
+    if (classicTimer) clearTimeout(classicTimer);
+  }
+  function playClassic() {
+    if (classicPlaying) {
+      stopClassic();
+      if (audioCtx) audioCtx.suspend();
+      return;
+    }
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume();
+    classicPlaying = true;
+    classic.textContent = '⏸ PAUSE HAPPY BIRTHDAY';
+    let i = 0;
+    const playNext = () => {
+      if (!classicPlaying || i >= melody.length) {
+        stopClassic();
+        return;
+      }
+      const [note, duration] = melody[i++];
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = noteFrequency(note);
+      gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.28, audioCtx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + Math.max(0.04, duration - 0.03));
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+      classicTimer = setTimeout(playNext, duration * 1000);
+    };
+    playNext();
+  }
+  classic.addEventListener('click', playClassic);
+})();
+</script>
 </body></html>
