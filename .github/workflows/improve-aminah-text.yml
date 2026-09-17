@@ -1,0 +1,43 @@
+name: Improve Aminah paragraph readability
+
+on:
+  push:
+    paths:
+      - '.github/workflows/improve-aminah-text.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-text-color:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Improve paragraph readability
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          replacements = {
+              '.subtitle{max-width:450px;color:#ffffffc4;': '.subtitle{max-width:450px;color:#fff0c9;',
+              '.card p{color:#ffffffbd;': '.card p{color:#ffe9bd;text-shadow:0 1px 10px #0009;',
+              '.wish-message{color:#fff;': '.wish-message{color:#ffe9bd;',
+              '.wish-empty{color:#ffffff9c;': '.wish-empty{color:#ffe9bd;',
+              '.hint{font-size:12px;color:#ffffff90;': '.hint{font-size:12px;color:#ffe8b5;',
+              '.footer-note{font-size:11px;color:#ffffff75;': '.footer-note{font-size:11px;color:#ffe8b5;',
+          }
+          for old, new in replacements.items():
+              s = s.replace(old, new)
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Commit changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Improve Aminah birthday page paragraph readability'
+          git push
