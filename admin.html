@@ -1,1 +1,94 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Birthday Wishes Admin</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body><h1>Birthday Wishes Admin</h1><p>Admin page</p></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Birthday Wishes Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:linear-gradient(135deg,#180a2b,#5b1b7a);color:#fff;padding:24px}
+.wrap{width:min(720px,100%);margin:auto}.panel{background:rgba(15,7,28,.88);border:1px solid rgba(255,215,106,.28);border-radius:24px;padding:22px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+h1{margin:0 0 6px;color:#ffd76a}.sub{color:#ddd;margin:0 0 20px}input{width:100%;padding:13px 14px;margin:6px 0;border:1px solid #6f4a88;border-radius:12px;background:#211036;color:#fff;font-size:15px}button{border:0;border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer;margin:6px 4px 6px 0}.primary{background:#ffd76a;color:#251033}.danger{background:#d92d55;color:#fff}.ghost{background:#39204e;color:#fff}.row{display:flex;gap:8px;flex-wrap:wrap}.status{min-height:24px;color:#ffd76a;margin:10px 0}.hidden{display:none}.wish{border:1px solid #59376e;border-radius:16px;padding:14px;margin:10px 0;background:#241238}.name{color:#ffd76a;font-weight:800}.date{font-size:12px;color:#aaa}.msg{margin-top:8px;white-space:pre-wrap}.badge{display:inline-block;font-size:11px;padding:3px 8px;border-radius:99px;background:#49305b;margin-left:6px}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="panel">
+<h1>Birthday Wishes Admin</h1>
+<p class="sub">Private controls for managing Aminah's birthday wishes.</p>
+
+<section id="loginBox">
+<input id="email" type="email" autocomplete="username" placeholder="Admin email">
+<input id="password" type="password" autocomplete="current-password" placeholder="Password">
+<button class="primary" id="login">Sign in</button>
+</section>
+
+<section id="adminBox" class="hidden">
+<div class="row">
+<button class="primary" id="refresh">↻ Refresh</button>
+<button class="danger" id="deleteAll">Delete ALL Wishes</button>
+<button class="ghost" id="logout">Sign out</button>
+</div>
+<div id="status" class="status"></div>
+<div id="list"></div>
+</section>
+</div></div>
+
+<script>
+const SUPABASE_URL='https://vrjxejuyiynllygiozhs.supabase.co';
+const SUPABASE_KEY='sb_publishable__esNlSYCC7dc4Cbn1yFZ4w_ttag7wqw';
+const client=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+const status=$('status');
+
+function setStatus(message,error=false){status.textContent=message;status.style.color=error?'#ff8fa8':'#ffd76a'}
+
+async function loadWishes(){
+  setStatus('Loading wishes…');
+  const {data,error}=await client.from('birthday_wishes').select('id,name,message,status,created_at').order('created_at',{ascending:false});
+  if(error){setStatus(error.message,true);return}
+  $('list').innerHTML=data.length?data.map(w=>'<article class="wish"><div><span class="name">💖 '+escapeHtml(w.name||'Anonymous')+'</span><span class="badge">'+escapeHtml(w.status||'')+'</span></div><div class="date">'+new Date(w.created_at).toLocaleString()+'</div><div class="msg">'+escapeHtml(w.message||'')+'</div><button class="danger" data-delete="'+escapeHtml(String(w.id))+'">Delete</button></article>').join(''):'<p>No wishes found.</p>';
+  setStatus(data.length+' wish'+(data.length===1?'':'es')+' loaded.');
+  document.querySelectorAll('[data-delete]').forEach(btn=>btn.onclick=()=>deleteOne(btn.dataset.delete));
+}
+
+async function deleteOne(id){
+  if(!confirm('Delete this birthday wish?'))return;
+  setStatus('Deleting…');
+  const {error}=await client.from('birthday_wishes').delete().eq('id',id);
+  if(error){setStatus(error.message,true);return}
+  await loadWishes();
+}
+
+async function deleteAll(){
+  if(!confirm('Delete ALL birthday wishes?'))return;
+  if(!confirm('This permanently removes every wish. Continue?'))return;
+  setStatus('Deleting all wishes…');
+  const {error}=await client.from('birthday_wishes').delete().not('id','is',null);
+  if(error){setStatus(error.message,true);return}
+  await loadWishes();
+}
+
+function escapeHtml(value){
+  return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+
+async function showSession(){
+  const {data:{session}}=await client.auth.getSession();
+  $('loginBox').classList.toggle('hidden',!!session);
+  $('adminBox').classList.toggle('hidden',!session);
+  if(session) await loadWishes();
+}
+$('login').onclick=async()=>{
+  setStatus('Signing in…');
+  const {error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+  if(error){$('status').textContent=error.message;$('status').style.color='#ff8fa8';return}
+  await showSession();
+};
+$('refresh').onclick=loadWishes;
+$('deleteAll').onclick=deleteAll;
+$('logout').onclick=async()=>{await client.auth.signOut();await showSession()};
+client.auth.onAuthStateChange(()=>showSession());
+showSession();
+</script>
+</body>
+</html>
