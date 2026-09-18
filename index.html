@@ -405,17 +405,35 @@ document.getElementById('open').onclick=show;gift.onclick=show;gift.onkeydown=e=
   async function prepareWishPhoto() {
     if (started) return;
     started = true;
+    const status = page4.querySelector('.wish-bg-status');
+
     try {
-      const { default: removeBackground } = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm');
-      const blob = await removeBackground(PHOTO);
-      const url = URL.createObjectURL(blob);
+      status.textContent = '✨ Removing background…';
+
+      const response = await fetch(PHOTO, { mode: 'cors', cache: 'force-cache' });
+      if (!response.ok) throw new Error('Photo could not be fetched');
+      const sourceBlob = await response.blob();
+
+      const { removeBackground } = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm');
+
+      const resultBlob = await removeBackground(sourceBlob, {
+        publicPath: 'https://staticimgly.com/@imgly/background-removal-data/1.7.0/dist/',
+        model: 'isnet_fp16',
+        device: 'cpu',
+        proxyToWorker: false,
+        output: { format: 'image/png', quality: 1 }
+      });
+
+      const url = URL.createObjectURL(resultBlob);
       foreground.onload = () => {
         page4.classList.add('photo-ready');
+        status.textContent = '✨ Photo ready';
+        setTimeout(() => status.remove(), 500);
       };
       foreground.src = url;
     } catch (error) {
-      console.warn('Background removal could not be prepared:', error);
-      page4.querySelector('.wish-bg-status').textContent = '✨ Photo ready';
+      console.warn('Background removal failed:', error);
+      status.textContent = '✨ Photo ready';
       foreground.src = PHOTO;
       foreground.onload = () => page4.classList.add('photo-ready');
     }
@@ -427,7 +445,9 @@ document.getElementById('open').onclick=show;gift.onclick=show;gift.onkeydown=e=
       observer.disconnect();
     }
   });
+
   observer.observe(page4, { attributes: true, attributeFilter: ['class'] });
+
   if (page4.classList.contains('active')) prepareWishPhoto();
 })();
 </script>
