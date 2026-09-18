@@ -394,61 +394,14 @@ document.getElementById('open').onclick=show;gift.onclick=show;gift.onkeydown=e=
   window.addEventListener('load', () => setTimeout(() => playClassic(), 350));
 })();
 </script>
-<script type="module">
+<script>
 (() => {
   const PHOTO = 'https://i.postimg.cc/ZYNTsHvP/DBAAEC65-64D2-4CAF-81BD-137431527857.png';
   const page4 = document.querySelector('.section[data-step="4"]');
   const foreground = page4?.querySelector('.wish-photo-focus');
   if (!page4 || !foreground) return;
-
-  let started = false;
-  async function prepareWishPhoto() {
-    if (started) return;
-    started = true;
-    const status = page4.querySelector('.wish-bg-status');
-
-    try {
-      status.textContent = '✨ Removing background…';
-
-      const response = await fetch(PHOTO, { mode: 'cors', cache: 'force-cache' });
-      if (!response.ok) throw new Error('Photo could not be fetched');
-      const sourceBlob = await response.blob();
-
-      const { removeBackground } = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm');
-
-      const resultBlob = await removeBackground(sourceBlob, {
-        publicPath: 'https://staticimgly.com/@imgly/background-removal-data/1.7.0/dist/',
-        model: 'isnet_fp16',
-        device: 'cpu',
-        proxyToWorker: false,
-        output: { format: 'image/png', quality: 1 }
-      });
-
-      const url = URL.createObjectURL(resultBlob);
-      foreground.onload = () => {
-        page4.classList.add('photo-ready');
-        status.textContent = '✨ Photo ready';
-        setTimeout(() => status.remove(), 500);
-      };
-      foreground.src = url;
-    } catch (error) {
-      console.warn('Background removal failed:', error);
-      status.textContent = '✨ Photo ready';
-      foreground.src = PHOTO;
-      foreground.onload = () => page4.classList.add('photo-ready');
-    }
-  }
-
-  const observer = new MutationObserver(() => {
-    if (page4.classList.contains('active')) {
-      prepareWishPhoto();
-      observer.disconnect();
-    }
-  });
-
-  observer.observe(page4, { attributes: true, attributeFilter: ['class'] });
-
-  if (page4.classList.contains('active')) prepareWishPhoto();
+  foreground.src = PHOTO;
+  foreground.onload = () => page4.classList.add('photo-ready');
 })();
 </script>
 </body></html>
